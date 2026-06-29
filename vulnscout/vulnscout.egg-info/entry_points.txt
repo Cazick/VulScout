@@ -1,0 +1,2 @@
+[console_scripts]
+vulnscout = vulnscout.main:cli

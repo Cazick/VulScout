@@ -1,0 +1,221 @@
+"""HTML 报告生成器 -- 生成带样式的 HTML 安全报告."""
+
+from __future__ import annotations
+
+import time
+from typing import List
+
+from vulnscout.detectors.base import Finding, Severity
+from vulnscout.reporter.base import BaseReporter, Report
+
+REPORT_TEMPLATE = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VulnScout 安全扫描报告 -- {target_url}</title>
+<style>
+  *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6; color: #1a1a2e; background: #f0f2f5; padding: 20px;
+  }}
+  .container {{ max-width: 1100px; margin: 0 auto; }}
+  header {{
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: #fff; padding: 30px 40px; border-radius: 12px; margin-bottom: 24px;
+  }}
+  header h1 {{ font-size: 28px; margin-bottom: 8px; }}
+  header p {{ color: #a0a0b8; font-size: 14px; }}
+  .summary-grid {{
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px; margin-bottom: 24px;
+  }}
+  .summary-card {{
+    background: #fff; border-radius: 10px; padding: 20px; text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }}
+  .summary-card .number {{ font-size: 36px; font-weight: 700; }}
+  .summary-card .label {{ font-size: 12px; color: #666; text-transform: uppercase; margin-top: 4px; }}
+  .severity-critical .number {{ color: #e74c3c; }}
+  .severity-high .number {{ color: #e67e22; }}
+  .severity-medium .number {{ color: #f39c12; }}
+  .severity-low .number {{ color: #3498db; }}
+
+  .finding {{ background: #fff; border-radius: 10px; margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }}
+  .finding-header {{
+    display: flex; align-items: center; padding: 16px 20px; cursor: pointer;
+    border-left: 4px solid #ddd;
+  }}
+  .finding-header:hover {{ background: #f8f9fa; }}
+  .finding-header .severity-badge {{
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 20px; color: #fff; margin-right: 12px;
+    min-width: 60px; text-align: center;
+  }}
+  .severity-critical .severity-badge {{ background: #e74c3c; }}
+  .severity-high .severity-badge {{ background: #e67e22; }}
+  .severity-medium .severity-badge {{ background: #f39c12; }}
+  .severity-low .severity-badge {{ background: #3498db; }}
+
+  .finding-header .finding-name {{ flex: 1; font-weight: 600; }}
+  .finding-header .finding-url {{ font-size: 12px; color: #666; max-width: 40%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+  .finding-body {{
+    padding: 0 20px 20px; display: none; border-top: 1px solid #eee;
+  }}
+  .finding-body.open {{ display: block; }}
+  .finding-body label {{ font-size: 11px; font-weight: 600; color: #666;
+    text-transform: uppercase; display: block; margin: 12px 0 4px; }}
+  .finding-body .evidence {{
+    background: #1a1a2e; color: #e8e8e8; padding: 12px; border-radius: 6px;
+    font-family: 'Consolas', 'Courier New', monospace; font-size: 13px;
+    overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+  }}
+  .finding-body .remediation {{
+    background: #eaf7ee; color: #1a6e3a; padding: 12px; border-radius: 6px;
+    border-left: 3px solid #2ecc71;
+  }}
+  .finding-body table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
+  .finding-body table th, .finding-body table td {{
+    text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee;
+  }}
+  .finding-body table th {{ color: #666; font-weight: 600; width: 120px; }}
+  footer {{ text-align: center; color: #999; font-size: 12px; margin-top: 40px; }}
+
+  .no-findings {{
+    text-align: center; padding: 60px; background: #fff; border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }}
+  .no-findings h2 {{ color: #2ecc71; margin-bottom: 8px; }}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>VulnScout 安全扫描报告</h1>
+    <p>目标: {target_url} | 扫描时间: {scan_time} | 耗时: {duration}s</p>
+  </header>
+
+  <div class="summary-grid">
+    <div class="summary-card severity-critical">
+      <div class="number">{critical_count}</div>
+      <div class="label">Critical</div>
+    </div>
+    <div class="summary-card severity-high">
+      <div class="number">{high_count}</div>
+      <div class="label">High</div>
+    </div>
+    <div class="summary-card severity-medium">
+      <div class="number">{medium_count}</div>
+      <div class="label">Medium</div>
+    </div>
+    <div class="summary-card severity-low">
+      <div class="number">{low_count}</div>
+      <div class="label">Low / Info</div>
+    </div>
+    <div class="summary-card">
+      <div class="number">{total_count}</div>
+      <div class="label">Total</div>
+    </div>
+  </div>
+
+  {findings_html}
+
+  <footer>
+    Generated by VulnScout v{version} | {scan_time}
+  </footer>
+</div>
+<script>
+document.querySelectorAll('.finding-header').forEach(header => {{
+  header.addEventListener('click', () => {{
+    header.nextElementSibling.classList.toggle('open');
+  }});
+}});
+</script>
+</body>
+</html>"""
+
+
+class HTMLReporter(BaseReporter):
+    """HTML 格式报告生成器."""
+
+    def generate(self, report: Report, output_path: str = "") -> str:
+        """生成 HTML 报告."""
+        findings = report.findings
+        severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+        findings.sort(key=lambda f: severity_order.get(f.severity.value, 99))
+
+        counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+        for f in findings:
+            counts[f.severity.value] = counts.get(f.severity.value, 0) + 1
+
+        findings_html = self._render_findings(findings)
+
+        if not findings:
+            findings_html = """
+            <div class="no-findings">
+              <h2>✅ 未发现安全漏洞</h2>
+              <p>目标网站通过了所有已启用检测器的检查。</p>
+            </div>
+            """
+
+        scan_time = time.strftime("%Y-%m-%d %H:%M:%S")
+        html = REPORT_TEMPLATE.format(
+            target_url=report.target_url,
+            scan_time=scan_time,
+            duration=f"{report.scan_duration:.1f}",
+            critical_count=counts.get("critical", 0),
+            high_count=counts.get("high", 0),
+            medium_count=counts.get("medium", 0),
+            low_count=counts.get("low", 0) + counts.get("info", 0),
+            total_count=len(findings),
+            findings_html=findings_html,
+            version="0.1.0",
+        )
+
+        if output_path:
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(html)
+            return output_path
+        return html
+
+    def _render_findings(self, findings: List[Finding]) -> str:
+        """渲染漏洞列表 HTML."""
+        parts = []
+        for f in findings:
+            evidence = f.evidence or "无"
+            remediation = f.remediation or "无"
+            param = f.parameter or "N/A"
+            payload = f.payload or "N/A"
+            cwe = f.cwe or "N/A"
+            confidence = f.confidence.value
+
+            severity_class = f.severity.value
+
+            parts.append(f"""
+            <div class="finding severity-{severity_class}">
+              <div class="finding-header">
+                <span class="severity-badge">{f.severity.value}</span>
+                <span class="finding-name">{f.name}</span>
+                <span class="finding-url" title="{f.url}">{f.url}</span>
+              </div>
+              <div class="finding-body">
+                <p style="margin:10px 0">{f.description}</p>
+                <table>
+                  <tr><th>URL</th><td>{f.url}</td></tr>
+                  <tr><th>Parameter</th><td>{param}</td></tr>
+                  <tr><th>Payload</th><td><code>{payload}</code></td></tr>
+                  <tr><th>Confidence</th><td>{confidence}</td></tr>
+                  <tr><th>CWE</th><td>{cwe}</td></tr>
+                </table>
+                <label>Evidence</label>
+                <div class="evidence">{evidence}</div>
+                <label>Remediation</label>
+                <div class="remediation">{remediation}</div>
+              </div>
+            </div>
+            """)
+
+        return "\n".join(parts)

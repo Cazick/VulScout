@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VulnScout 安全扫描报告 -- https://httpbin.org/get</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6; color: #1a1a2e; background: #f0f2f5; padding: 20px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  header {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: #fff; padding: 30px 40px; border-radius: 12px; margin-bottom: 24px;
+  }
+  header h1 { font-size: 28px; margin-bottom: 8px; }
+  header p { color: #a0a0b8; font-size: 14px; }
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px; margin-bottom: 24px;
+  }
+  .summary-card {
+    background: #fff; border-radius: 10px; padding: 20px; text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .summary-card .number { font-size: 36px; font-weight: 700; }
+  .summary-card .label { font-size: 12px; color: #666; text-transform: uppercase; margin-top: 4px; }
+  .severity-critical .number { color: #e74c3c; }
+  .severity-high .number { color: #e67e22; }
+  .severity-medium .number { color: #f39c12; }
+  .severity-low .number { color: #3498db; }
+
+  .finding { background: #fff; border-radius: 10px; margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+  .finding-header {
+    display: flex; align-items: center; padding: 16px 20px; cursor: pointer;
+    border-left: 4px solid #ddd;
+  }
+  .finding-header:hover { background: #f8f9fa; }
+  .finding-header .severity-badge {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 20px; color: #fff; margin-right: 12px;
+    min-width: 60px; text-align: center;
+  }
+  .severity-critical .severity-badge { background: #e74c3c; }
+  .severity-high .severity-badge { background: #e67e22; }
+  .severity-medium .severity-badge { background: #f39c12; }
+  .severity-low .severity-badge { background: #3498db; }
+
+  .finding-header .finding-name { flex: 1; font-weight: 600; }
+  .finding-header .finding-url { font-size: 12px; color: #666; max-width: 40%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .finding-body {
+    padding: 0 20px 20px; display: none; border-top: 1px solid #eee;
+  }
+  .finding-body.open { display: block; }
+  .finding-body label { font-size: 11px; font-weight: 600; color: #666;
+    text-transform: uppercase; display: block; margin: 12px 0 4px; }
+  .finding-body .evidence {
+    background: #1a1a2e; color: #e8e8e8; padding: 12px; border-radius: 6px;
+    font-family: 'Consolas', 'Courier New', monospace; font-size: 13px;
+    overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+  }
+  .finding-body .remediation {
+    background: #eaf7ee; color: #1a6e3a; padding: 12px; border-radius: 6px;
+    border-left: 3px solid #2ecc71;
+  }
+  .finding-body table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .finding-body table th, .finding-body table td {
+    text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee;
+  }
+  .finding-body table th { color: #666; font-weight: 600; width: 120px; }
+  footer { text-align: center; color: #999; font-size: 12px; margin-top: 40px; }
+
+  .no-findings {
+    text-align: center; padding: 60px; background: #fff; border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .no-findings h2 { color: #2ecc71; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>VulnScout 安全扫描报告</h1>
+    <p>目标: https://httpbin.org/get | 扫描时间: 2026-06-29 16:22:32 | 耗时: 1.3s</p>
+  </header>
+
+  <div class="summary-grid">
+    <div class="summary-card severity-critical">
+      <div class="number">0</div>
+      <div class="label">Critical</div>
+    </div>
+    <div class="summary-card severity-high">
+      <div class="number">1</div>
+      <div class="label">High</div>
+    </div>
+    <div class="summary-card severity-medium">
+      <div class="number">4</div>
+      <div class="label">Medium</div>
+    </div>
+    <div class="summary-card severity-low">
+      <div class="number">4</div>
+      <div class="label">Low / Info</div>
+    </div>
+    <div class="summary-card">
+      <div class="number">9</div>
+      <div class="label">Total</div>
+    </div>
+  </div>
+
+  
+            <div class="finding severity-high">
+              <div class="finding-header">
+                <span class="severity-badge">high</span>
+                <span class="finding-name">Content-Security-Policy (CSP)</span>
+                <span class="finding-url" title="https://httpbin.org/get">https://httpbin.org/get</span>
+              </div>
+              <div class="finding-body">
+                <p style="margin:10px 0">缺少 CSP 头，可能导致 XSS 和数据注入攻击</p>
+                <table>
+                  <tr><th>URL</th><td>https://httpbin.org/get</td></tr>
+                  <tr><th>Parameter</th><td>N/A</td></tr>
+                  <tr><th>Payload</th><td><code>N/A</code></td></tr>
+                  <tr><th>Confidence</th><td>certain</td></tr>
+                  <tr><th>CWE</th><td>CWE-1021</td></tr>
+                </table>
+                <label>Evidence</label>
+                <div class="evidence">无</div>
+                <label>Remediation</label>
+                <div class="remediation">添加 Content-Security-Policy 头，限制可加载的资源来源</div>
+              </div>
+            </div>
+            
+
+            <div class="finding severity-medium">
+              <div class="finding-header">
+                <span class="severity-badge">medium</span>
+                <span class="finding-name">Strict-Transport-Security (HSTS)</span>
+                <span class="finding-url" title="https://httpbin.org/get">https://httpbin.org/get</span>
+              </div>
+              <div class="finding-body">
+                <p style="margin:10px 0">缺少 HSTS 头，无法强制 HTTPS 连接</p>
+                <table>
+                  <tr><th>URL</th><td>https://httpbin.org/get</td></tr>
+                  <tr><th>Parameter</th><td>N/A</td></tr>
+                  <tr><th>Payload</th><td><code>N/A</code></td></tr>
+                  <tr><th>Confidence</th><td>certain</td></tr>
+                  <tr><th>CWE</th><td>CWE-319</td></tr>
+                </table>
+                <label>Evidence</label>
+                <div class="evidence">无</div>
+                <label>Remediation</label>
+                <div class="remediation">添加 Strict-Transport-Security 头，建议 max-age=31536000; includeSubDomains</div>
+              </div>
+            </div>
+            
+
+            <div class="finding severity-medium">
+              <div class="finding-header">
+                <span class="severity-badge">medium</span>
+                <span class="finding-name">X-Content-Type-Options</span>
+                <span class="finding-url" title="https://httpbin.org/get">https://httpbin.org/get</span>
+              </div>
+              <div class="finding-body">
+                <p style="margin:10px 0">缺少 X-Content-Type-Options: nosniff 头，可能导致 MIME 类型混淆攻击</p>
+                <table>
+                  <tr><th>URL</th><td>https://httpbin.org/get</td></tr>
+                  <tr><th>Parameter</th><td>N/A</td></tr>
+                  <tr><th>Payload</th><td><code>N/A</code></td></tr>
+                  <tr><th>Confidence</th><td>certain</td></tr>
+                  <tr><th>CWE</th><td>CWE-345</td></tr>
+                </table>
+                <label>Evidence</label>
+                <div class="evidence">无</div>
+                <label>Remediation</label>
+                <div class="remediation">添加 X-Content-Type-Options: nosniff 头</div>
+              </div>
+            </div>
+            
+
+            <div class="finding severity-medium">
+              <div class="finding-header">
+                <span class="severity-badge">medium</span>
+                <span class="finding-name">X-Frame-Options</span>
+                <span class="finding-url" title="https://httpbin.org/get">https://httpbin.org/get</span>
+              </div>
+              <div class="finding-body">
+                <p style="margin:10px 0">缺少 X-Frame-Options 头，可能存在点击劫持风险</p>
+                <table>
+                  <tr><th>URL</th><td>https://httpbin.org/get</td></tr>
+                  <tr><th>Parameter</th><td>N/A</td></tr>
+                  <tr><th>Payload</th><td><code>N/A</code></td></tr>
+                  <tr><th>Confidence</th><td>certain</td></tr>
+                  <tr><th>CWE</th><td>CWE-1021</td></tr>
+                </table>
+                <label>Evidence</label>
+                <div class="evidence">无</div>
+                <label>Remediation</label>
+                <div class="remediation">添加 X-Frame-Options: DENY 或 SAMEORIGIN 头</div>
+              </div>
+            </div>
+            
+
+            <div class="finding severity-medium">
+              <div class="finding-header">
+                <span class="severity-badge">medium</span>
+                <span class="finding-name">CORS 配置</span>
+                <span class="finding-url" title="https://httpbin.org/get">https://httpbin.org/get</span>
+              </div>
+              <div class="finding-body">
+                <p style="margin:10px 0">CORS 配置过于宽松，允许任意来源访问</p>
+                <table>
+                  <tr><th>URL</th><td>https://httpbin.org/get</td></tr>
+                  <tr><th>Parameter</th><td>N/A</td></tr>
+                  <tr><th>Payload</th><td><code>N/A</code></td></tr>
+                  <tr><th>Confidence</th><td>certain</td></tr>
+                  <tr><th>CWE</th><td>CWE-942</td></tr>
+                </table>
+                <label>Evidence</label>
+                <div class="evidence">无</div>
+                <label>Remediation</label>
+                <div class="remediation">限制 Access-Control-Allow-Origin 为特定可信域名</div>
+              </div>
+            </div>
+            
+
+            <div class="finding severity-low">
+              <div class="finding-header">
+                <span class="severity-badge">low</span>
+                <span class="finding-name">X-XSS-Protection</span>
+                <span class="finding-url" title="https://httpbin.org/get">https://httpbin.org/get</span>
+              </div>
+              <div class="finding-body">
+                <p style="margin:10px 0">缺少 X-XSS-Protection 头</p>
+                <table>
+                  <tr><th>URL</th><td>https://httpbin.org/get</td></tr>
+                  <tr><th>Parameter</th><td>N/A</td></tr>
+                  <tr><th>Payload</th><td><code>N/A</code></td></tr>
+                  <tr><th>Confidence</th><td>certain</td></tr>
+                  <tr><th>CWE</th><td>CWE-79</td></tr>
+                </table>
+                <label>Evidence</label>
+                <div class="evidence">无</div>
+                <label>Remediation</label>
+                <div class="remediation">添加 X-XSS-Protection: 1; mode=block 头</div>
+              </div>
+            </div>
+            
+
+            <div class="finding severity-low">
+              <div class="finding-header">
+                <span class="severity-badge">low</span>
+                <span class="finding-name">Referrer-Policy</span>
+                <span class="finding-url" title="https://httpbin.org/get">https://httpbin.org/get</span>
+              </div>
+              <div class="finding-body">
+                <p style="margin:10px 0">缺少 Referrer-Policy 头，可能泄露 URL 中的敏感信息</p>
+                <table>
+                  <tr><th>URL</th><td>https://httpbin.org/get</td></tr>
+                  <tr><th>Parameter</th><td>N/A</td></tr>
+                  <tr><th>Payload</th><td><code>N/A</code></td></tr>
+                  <tr><th>Confidence</th><td>certain</td></tr>
+                  <tr><th>CWE</th><td>CWE-200</td></tr>
+                </table>
+                <label>Evidence</label>
+                <div class="evidence">无</div>
+                <label>Remediation</label>
+                <div class="remediation">添加 Referrer-Policy: no-referrer 或 strict-origin-when-cross-origin</div>
+              </div>
+            </div>
+            
+
+            <div class="finding severity-low">
+              <div class="finding-header">
+                <span class="severity-badge">low</span>
+                <span class="finding-name">Permissions-Policy</span>
+                <span class="finding-url" title="https://httpbin.org/get">https://httpbin.org/get</span>
+              </div>
+              <div class="finding-body">
+                <p style="margin:10px 0">缺少 Permissions-Policy 头，未限制浏览器 API 权限</p>
+                <table>
+                  <tr><th>URL</th><td>https://httpbin.org/get</td></tr>
+                  <tr><th>Parameter</th><td>N/A</td></tr>
+                  <tr><th>Payload</th><td><code>N/A</code></td></tr>
+                  <tr><th>Confidence</th><td>certain</td></tr>
+                  <tr><th>CWE</th><td>CWE-693</td></tr>
+                </table>
+                <label>Evidence</label>
+                <div class="evidence">无</div>
+                <label>Remediation</label>
+                <div class="remediation">添加 Permissions-Policy 头，限制不需要的浏览器功能</div>
+              </div>
+            </div>
+            
+
+            <div class="finding severity-low">
+              <div class="finding-header">
+                <span class="severity-badge">low</span>
+                <span class="finding-name">Cache-Control (敏感信息缓存)</span>
+                <span class="finding-url" title="https://httpbin.org/get">https://httpbin.org/get</span>
+              </div>
+              <div class="finding-body">
+                <p style="margin:10px 0">响应缺少 Cache-Control: no-store 头，敏感信息可能被缓存</p>
+                <table>
+                  <tr><th>URL</th><td>https://httpbin.org/get</td></tr>
+                  <tr><th>Parameter</th><td>N/A</td></tr>
+                  <tr><th>Payload</th><td><code>N/A</code></td></tr>
+                  <tr><th>Confidence</th><td>certain</td></tr>
+                  <tr><th>CWE</th><td>CWE-525</td></tr>
+                </table>
+                <label>Evidence</label>
+                <div class="evidence">无</div>
+                <label>Remediation</label>
+                <div class="remediation">对包含敏感信息的响应添加 Cache-Control: no-store</div>
+              </div>
+            </div>
+            
+
+  <footer>
+    Generated by VulnScout v0.1.0 | 2026-06-29 16:22:32
+  </footer>
+</div>
+<script>
+document.querySelectorAll('.finding-header').forEach(header => {
+  header.addEventListener('click', () => {
+    header.nextElementSibling.classList.toggle('open');
+  });
+});
+</script>
+</body>
+</html>
